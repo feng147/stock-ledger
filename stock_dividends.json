@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-17",
+  "updatedAt": "2026-10-18",
   "source": "eastmoney RPT_SHAREBONUS_DET (snapshot)",
   "stocks": {
     "300014": {
@@ -33049,6 +33049,16 @@
     "603517": {
       "name": "绝味食品",
       "records": [
+        {
+          "ps": 0.25,
+          "planText": "10派2.50元(含税,扣税后2.25元)",
+          "planDate": "2026-04-23",
+          "recordDate": "2026-10-22",
+          "exDate": "2026-10-23",
+          "progress": "实施分配",
+          "reportDate": "2026-06-30",
+          "divYield": 2.2999080036999997
+        },
         {
           "ps": 0.32999999999999996,
           "planText": "10派3.30元(含税,扣税后2.97元)",
