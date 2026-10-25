@@ -47,7 +47,10 @@ function fetchCurl(code) {
   const out = execSync(`curl -s --max-time 30 -H "User-Agent: ${UA}" "${url}"`, { encoding: 'utf8', timeout: 35000 });
   const j = JSON.parse(out);
   const data = (j && j.result && j.result.data) || [];
-  return data.filter(rec => rec.EX_DIVIDEND_DATE).map(normalize);
+  // 旧实现只保留「有除息日」的记录，把「已公告但还没除息」的预案整条丢弃，
+  // 于是日历里「预案公告」这类事件永远无法从快照渲染（要等走实时接口才冒出来）。
+  // 保留「有除息日」或「有预案公告日」的记录即可覆盖 预案/登记/除息 全类型。
+  return data.filter(rec => rec.EX_DIVIDEND_DATE || rec.PLAN_NOTICE_DATE).map(normalize);
 }
 
 async function fetchOne(s, attempt = 1) {
