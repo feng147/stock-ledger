@@ -1106,7 +1106,7 @@
  ]);
  // 基金快照补最新一期：同域快照只在部署时更新，用仓库 raw（Actions 每日刷新）按除息日去重补全
  try {
- const fr = await fetch("https://raw.githubusercontent.com/fengyin01/stock-ledger/master/fund_dividends.json", { cache: "no-store" }).catch(() => null);
+ const fr = await fetch("https://raw.githubusercontent.com/feng147/stock-ledger/master/fund_dividends.json", { cache: "no-store" }).catch(() => null);
  if (fr && fr.ok) {
  const rawF = await fr.json();
  if (rawF && rawF.funds) {

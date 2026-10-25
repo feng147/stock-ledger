@@ -914,9 +914,9 @@
  // 快照镜像源：raw.githubusercontent.com 在国内经常不可达（且 Pages 部署资产可能长期冻结），
  // 因此按顺序尝试 raw → jsDelivr → gcore，任一成功即返回，避免「只有陈旧同域快照可用」。
  const SNAP_MIRRORS = [
- "https://raw.githubusercontent.com/fengyin01/stock-ledger/master/",
- "https://cdn.jsdelivr.net/gh/fengyin01/stock-ledger@master/",
- "https://gcore.jsdelivr.net/gh/fengyin01/stock-ledger@master/",
+ "https://raw.githubusercontent.com/feng147/stock-ledger/master/",
+ "https://cdn.jsdelivr.net/gh/feng147/stock-ledger@master/",
+ "https://gcore.jsdelivr.net/gh/feng147/stock-ledger@master/",
  ];
  async function fetchSnapJson(file, ms = 8000) {
  for (const base of SNAP_MIRRORS) {
