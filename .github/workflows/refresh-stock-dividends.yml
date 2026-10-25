@@ -47,10 +47,14 @@ jobs:
       # 页面只能靠 GitHub raw 补数据（国内常不可达）—— 这就是分红 chips 消失的上游原因。
       # 下面用 Deploy Hook 主动触发一次部署，让部署资产跟上每日刷新。
       - name: 触发 Cloudflare Pages 重新部署
-        if: ${{ steps.commit.outputs.changed == 'true' && secrets.CF_PAGES_DEPLOY_HOOK != '' }}
-        run: curl -fsS -X POST "${{ secrets.CF_PAGES_DEPLOY_HOOK }}"
+        if: ${{ steps.commit.outputs.changed == 'true' && env.CF_PAGES_DEPLOY_HOOK != '' }}
+        env:
+          CF_PAGES_DEPLOY_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+        run: curl -fsS -X POST "$CF_PAGES_DEPLOY_HOOK"
 
       - name: 未配置部署钩子的提示
-        if: ${{ steps.commit.outputs.changed == 'true' && secrets.CF_PAGES_DEPLOY_HOOK == '' }}
+        if: ${{ steps.commit.outputs.changed == 'true' && env.CF_PAGES_DEPLOY_HOOK == '' }}
+        env:
+          CF_PAGES_DEPLOY_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
         run: |
           echo "::warning::未配置 CF_PAGES_DEPLOY_HOOK，pages.dev 的快照不会自动更新（页面会回退到 GitHub raw）"
