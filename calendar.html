@@ -1009,12 +1009,14 @@
  ? f.records.map(d => ({
  ps: d.ps != null ? d.ps : null,
  planText: d.planText || "",
- planDate: null,
+ // 快照里本就带这几个字段，早期实现硬编码成 null，导致「预案公告」事件
+ // 永远无法从快照渲染出来（只有走实时接口时才出现，于是点一次刷新会凭空多出预案标签）。
+ planDate: d.planDate || null,
  recordDate: d.recordDate || null,
  exDate: d.exDate || null,
- progress: "分红",
- reportDate: null,
- divYield: null
+ progress: d.progress || "分红",
+ reportDate: d.reportDate || null,
+ divYield: d.divYield != null ? d.divYield : null
  }))
  : [];
  // 只有新鲜快照才可直接信任（省一次实时请求）；过期快照一律以实时接口为准 ——
