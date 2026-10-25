@@ -191,6 +191,16 @@
       "name": "爱尔眼科",
       "records": [
         {
+          "ps": null,
+          "planText": "分红金额不得超过当期归属于上市公司股东净利润的50%",
+          "planDate": "2026-04-24",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.1,
           "planText": "10派1.00元(含税)",
           "planDate": "2026-04-24",
@@ -571,6 +581,16 @@
           "divYield": 0.7178750896999999
         },
         {
+          "ps": null,
+          "planText": "每10股派发现金红利不低于2元(含本数),但不超过相应期间归属于上市公司股东的净利润",
+          "planDate": "2024-04-23",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2024-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.8,
           "planText": "10派8.00元(含税)",
           "planDate": "2024-04-23",
@@ -715,6 +735,16 @@
     "300124": {
       "name": "汇川技术",
       "records": [
+        {
+          "ps": null,
+          "planText": "中期分红金额不超过当期归属于上市公司股东的净利润的100%",
+          "planDate": "2026-04-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
         {
           "ps": 0.5,
           "planText": "10派5.00元(含税)",
@@ -4626,6 +4656,16 @@
       "name": "华电国际",
       "records": [
         {
+          "ps": 0.09,
+          "planText": "10派0.90元(含税)",
+          "planDate": "2026-07-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.7578125
+        },
+        {
           "ps": 0.13999999999999999,
           "planText": "10派1.40元(含税,扣税后1.26元)",
           "planDate": "2026-03-27",
@@ -5241,6 +5281,16 @@
       "name": "中信证券",
       "records": [
         {
+          "ps": 0.42699999999999994,
+          "planText": "10派4.27元(含税)",
+          "planDate": "2026-08-21",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.6777996071
+        },
+        {
           "ps": 0.41,
           "planText": "10派4.10元(含税,扣税后3.69元)",
           "planDate": "2026-03-27",
@@ -5760,6 +5810,16 @@
     "600036": {
       "name": "招商银行",
       "records": [
+        {
+          "ps": null,
+          "planText": "现金分红金额占2026年半年度归属于本行普通股股东净利润的比例为35%",
+          "planDate": "2026-03-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
         {
           "ps": 1.003,
           "planText": "10派10.03元(含税)",
@@ -12131,6 +12191,16 @@
       "name": "宁沪高速",
       "records": [
         {
+          "ps": 0.25,
+          "planText": "10派2.50元(含税)",
+          "planDate": "2026-08-05",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.8811136193
+        },
+        {
           "ps": 0.49000000000000005,
           "planText": "10派4.90元(含税,扣税后4.41元)",
           "planDate": "2026-03-30",
@@ -14296,6 +14366,16 @@
       "name": "贵州茅台",
       "records": [
         {
+          "ps": null,
+          "planText": "分红金额上限不超过公司2026年上半年实现归属于上市公司股东的净利润",
+          "planDate": "2026-04-17",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 28.02423,
           "planText": "10派280.2423元(含税)",
           "planDate": "2026-04-17",
@@ -14855,6 +14935,16 @@
     "600547": {
       "name": "山东黄金",
       "records": [
+        {
+          "ps": null,
+          "planText": "分红金额不超过当期实现归属于上市公司股东的净利润的40%",
+          "planDate": "2026-03-27",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
         {
           "ps": 0.1,
           "planText": "10派1.00元(含税,扣税后0.90元)",
@@ -17860,6 +17950,16 @@
     "600690": {
       "name": "海尔智家",
       "records": [
+        {
+          "ps": null,
+          "planText": "现金分红金额以当期归属于上市公司股东的净利润为上限",
+          "planDate": "2026-03-27",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
         {
           "ps": 0.89151,
           "planText": "10派8.9151元(含税)",
@@ -22840,6 +22940,16 @@
       "name": "南京银行",
       "records": [
         {
+          "ps": null,
+          "planText": "上限不超过相应期间归属于公司普通股股东的净利润",
+          "planDate": "2026-08-19",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.22294999999999998,
           "planText": "10派2.2295元(含税,扣税后2.0066元)",
           "planDate": "2026-04-23",
@@ -24195,6 +24305,16 @@
       "name": "兴业银行",
       "records": [
         {
+          "ps": null,
+          "planText": "2026年度中期现金分红金额占半年度归属于合并报表口径母公司普通股股东净利润的比例不高于三分之一",
+          "planDate": "2026-04-30",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.501,
           "planText": "10派5.01元(含税,扣税后4.509元)",
           "planDate": "2026-03-27",
@@ -24409,6 +24529,16 @@
     "601169": {
       "name": "北京银行",
       "records": [
+        {
+          "ps": 0.13,
+          "planText": "10派1.30元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 2.4029574861
+        },
         {
           "ps": 0.27799999999999997,
           "planText": "10派2.78元(含税,扣税后2.502元)",
@@ -26185,6 +26315,16 @@
       "name": "交通银行",
       "records": [
         {
+          "ps": 0.16799999999999998,
+          "planText": "10派1.68元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 2.0869565217
+        },
+        {
           "ps": 0.1684,
           "planText": "10派1.684元(含税,扣税后1.5156元)",
           "planDate": "2026-03-28",
@@ -26429,6 +26569,16 @@
     "601336": {
       "name": "新华保险",
       "records": [
+        {
+          "ps": 0.73,
+          "planText": "10派7.30元(含税)",
+          "planDate": "2026-08-27",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "股东大会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.431372549
+        },
         {
           "ps": 2.06,
           "planText": "10派20.60元(含税,扣税后18.54元)",
@@ -28220,6 +28370,16 @@
       "name": "邮储银行",
       "records": [
         {
+          "ps": 0.133,
+          "planText": "10派1.33元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": "2026-12-10",
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 2.4270072993
+        },
+        {
           "ps": 0.0953,
           "planText": "10派0.953元(含税,扣税后0.8577元)",
           "planDate": "2026-03-28",
@@ -29345,6 +29505,16 @@
       "name": "中国交建",
       "records": [
         {
+          "ps": null,
+          "planText": "分红金额不超过截至2026年6月30日止6个月归属于公司股东的净利润",
+          "planDate": "2026-03-31",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.07793,
           "planText": "10派0.7793元(含税)",
           "planDate": "2026-03-31",
@@ -29519,6 +29689,16 @@
     "601816": {
       "name": "京沪高铁",
       "records": [
+        {
+          "ps": 0.0789,
+          "planText": "10派0.789元(含税)",
+          "planDate": "2026-10-22",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.532038835
+        },
         {
           "ps": 0.0954,
           "planText": "10派0.954元(含税,扣税后0.8586元)",
@@ -30605,6 +30785,16 @@
       "name": "紫金矿业",
       "records": [
         {
+          "ps": null,
+          "planText": "每10股派发现金红利应不少于3.8元(含税)",
+          "planDate": "2026-03-21",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.42000000000000004,
           "planText": "10派4.20元(含税,扣税后3.78元)",
           "planDate": "2026-07-11",
@@ -31200,6 +31390,16 @@
       "name": "建设银行",
       "records": [
         {
+          "ps": 0.20099999999999998,
+          "planText": "10派2.01元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.7787610619
+        },
+        {
           "ps": 0.2029,
           "planText": "10派2.029元(含税,扣税后1.8261元)",
           "planDate": "2026-03-28",
@@ -31559,6 +31759,16 @@
     "601988": {
       "name": "中国银行",
       "records": [
+        {
+          "ps": 0.119,
+          "planText": "10派1.19元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.7171717172
+        },
         {
           "ps": 0.1169,
           "planText": "10派1.169元(含税,扣税后1.0521元)",
@@ -31989,6 +32199,16 @@
     "601998": {
       "name": "中信银行",
       "records": [
+        {
+          "ps": 0.20299999999999999,
+          "planText": "10派2.03元(含税)",
+          "planDate": "2026-08-27",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 2.3068181818
+        },
         {
           "ps": 0.193,
           "planText": "10派1.93元(含税,扣税后1.737元)",
@@ -34344,6 +34564,16 @@
       "name": "宁波银行",
       "records": [
         {
+          "ps": 0.4,
+          "planText": "10派4.00元(含税)",
+          "planDate": "2026-08-20",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "股东大会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.1890606421
+        },
+        {
           "ps": 0.9,
           "planText": "10派9.00元(含税,扣税后8.10元)",
           "planDate": "2026-04-25",
@@ -35938,6 +36168,16 @@
     "000333": {
       "name": "美的集团",
       "records": [
+        {
+          "ps": 0.5,
+          "planText": "10派5.00元(含税)",
+          "planDate": "2026-08-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "股东大会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 0.5841803949
+        },
         {
           "ps": 3.8,
           "planText": "10派38.00元(含税,扣税后34.20元)",
@@ -37564,6 +37804,16 @@
       "name": "泸州老窖",
       "records": [
         {
+          "ps": null,
+          "planText": "不超过当期归属于上市公司股东的净利润",
+          "planDate": "2026-04-29",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 4.4171214999999995,
           "planText": "10派44.171215元(含税,扣税后39.754093元)",
           "planDate": "2026-04-29",
@@ -38308,6 +38558,16 @@
     "000895": {
       "name": "双汇发展",
       "records": [
+        {
+          "ps": null,
+          "planText": "分红金额不超过当期实现的归属于上市公司股东的净利润",
+          "planDate": "2026-03-25",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
         {
           "ps": 0.8,
           "planText": "10派8.00元(含税)",
@@ -40199,6 +40459,16 @@
       "name": "新和成",
       "records": [
         {
+          "ps": 0.2,
+          "planText": "10派2.00元(含税)",
+          "planDate": "2026-07-21",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 0.7766990291
+        },
+        {
           "ps": 0.8,
           "planText": "10派8.00元(含税,扣税后7.20元)",
           "planDate": "2026-04-16",
@@ -40457,6 +40727,36 @@
           "progress": "实施分配",
           "reportDate": "2004-12-31",
           "divYield": 2.5839793282
+        },
+        {
+          "ps": 0.6,
+          "planText": "10派6.00元(含税)",
+          "planDate": "2004-05-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "实施分配",
+          "reportDate": "2003-12-31",
+          "divYield": 2.3300970874
+        },
+        {
+          "ps": 0.3,
+          "planText": "10派3.00元(含税)",
+          "planDate": "2004-05-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "实施分配",
+          "reportDate": "2002-12-31",
+          "divYield": 1.1650485437
+        },
+        {
+          "ps": 0.12,
+          "planText": "10派1.20元(含税)",
+          "planDate": "2004-05-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "实施分配",
+          "reportDate": "2000-12-31",
+          "divYield": 0.4660194175
         }
       ]
     },
@@ -40863,6 +41163,16 @@
     "000951": {
       "name": "中国重汽",
       "records": [
+        {
+          "ps": 0.541,
+          "planText": "10派5.41元(含税)",
+          "planDate": "2026-08-27",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 2.6326034063
+        },
         {
           "ps": 0.512,
           "planText": "10派5.12元(含税,扣税后4.608元)",
@@ -42959,6 +43269,16 @@
           "divYield": 0.5259006048
         },
         {
+          "ps": 0.32999999999999996,
+          "planText": "10派3.30元(含税)",
+          "planDate": "2018-03-16",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "股东大会否决",
+          "reportDate": "2017-12-31",
+          "divYield": 1.171875
+        },
+        {
           "ps": 0.25,
           "planText": "10派2.50元(含税,扣税后2.25元)",
           "planDate": "2016-04-07",
@@ -43718,6 +44038,16 @@
     "002241": {
       "name": "歌尔股份",
       "records": [
+        {
+          "ps": 0.15,
+          "planText": "10派1.50元(含税)",
+          "planDate": "2026-10-24",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-09-30",
+          "divYield": 0.6490696668
+        },
         {
           "ps": 0.2,
           "planText": "10派2.00元(含税,扣税后1.80元)",
@@ -46704,6 +47034,16 @@
       "name": "中联重科",
       "records": [
         {
+          "ps": null,
+          "planText": "分红金额不超过当期归属于上市公司股东的净利润的100%",
+          "planDate": "2026-03-31",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "预披露",
+          "reportDate": "2026-06-30",
+          "divYield": null
+        },
+        {
           "ps": 0.2,
           "planText": "10派2.00元(含税)",
           "planDate": "2026-03-31",
@@ -48354,6 +48694,16 @@
       "name": "中山公用",
       "records": [
         {
+          "ps": 0.15,
+          "planText": "10派1.50元(含税)",
+          "planDate": "2026-10-20",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.4591439689
+        },
+        {
           "ps": 0.385,
           "planText": "10派3.85元(含税,扣税后3.465元)",
           "planDate": "2026-04-25",
@@ -48853,6 +49203,16 @@
     "000166": {
       "name": "申万宏源",
       "records": [
+        {
+          "ps": 0.05,
+          "planText": "10派0.50元(含税)",
+          "planDate": "2026-08-28",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.1467889908
+        },
         {
           "ps": 0.075,
           "planText": "10派0.75元(含税,扣税后0.675元)",
