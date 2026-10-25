@@ -19686,6 +19686,16 @@
       "name": "新奥股份",
       "records": [
         {
+          "ps": 0.25,
+          "planText": "10派2.50元(含税)",
+          "planDate": "2026-10-13",
+          "recordDate": null,
+          "exDate": null,
+          "progress": "董事会决议通过",
+          "reportDate": "2026-06-30",
+          "divYield": 1.2774655084000002
+        },
+        {
           "ps": 0.96,
           "planText": "10派9.60元(含税,扣税后8.64元)",
           "planDate": "2026-03-28",
