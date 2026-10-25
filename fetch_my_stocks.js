@@ -17,6 +17,20 @@ while ((m = re.exec(html))) {
   if (!seen.has(m[1])) { seen.add(m[1]); targets.push({ code: m[1], name: m[2] }); }
 }
 
+// 快照里已存在、但 index.html 预置列表里没有的代码（例如用户自选里加过又被删掉，
+// 或早期一次性抓取留下的）：它们不会被上面的正则覆盖，若不补进来就会一直吃
+// 历史旧数据、永远拿不到新公告（600803 新奥股份的「预案公告」就是这么丢的）。
+try {
+  const prev = JSON.parse(fs.readFileSync('stock_dividends.json', 'utf8'));
+  for (const code of Object.keys(prev.stocks || {})) {
+    if (!seen.has(code)) {
+      seen.add(code);
+      targets.push({ code, name: (prev.stocks[code] && prev.stocks[code].name) || code });
+      console.log(`补抓快照既有代码 ${code}（不在 index.html 预置列表）`);
+    }
+  }
+} catch (e) { /* 首次运行没有旧快照，忽略 */ }
+
 // 读取现有快照（保留已有真实数据）
 let out = { updatedAt: new Date().toISOString().slice(0, 10), source: 'eastmoney RPT_SHAREBONUS_DET (snapshot)', stocks: {} };
 try {

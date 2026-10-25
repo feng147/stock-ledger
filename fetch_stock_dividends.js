@@ -19,7 +19,7 @@ async function fetchOne(code) {
     const r = await fetch(API.replace('CODE', code), { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const j = await r.json();
     const d = (j.result && j.result.data) || [];
-    const recs = d.filter(x => x.EX_DIVIDEND_DATE).map(x => ({
+    const recs = d.filter(x => x.EX_DIVIDEND_DATE || x.PLAN_NOTICE_DATE).map(x => ({
       year: String(x.EX_DIVIDEND_DATE).slice(0, 4),
       recordDate: x.EQUITY_RECORD_DATE ? String(x.EQUITY_RECORD_DATE).slice(0, 10) : null,
       exDate: String(x.EX_DIVIDEND_DATE).slice(0, 10),
