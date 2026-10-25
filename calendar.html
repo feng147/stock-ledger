@@ -453,6 +453,12 @@
  function startOfToday() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
  function dayStr(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
  function addDays(d, n) { const x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
+ // 快照新鲜度闸门：只信任「不早于昨天」的快照（Actions 按 UTC 日期写入，留 1 天时差）。
+ // 旧实现只要 records 非空就无脑返回快照，导致部署站上 9 月的陈旧快照把 10 月的实时数据整体盖掉。
+ function snapFresh(updatedAt) {
+ if (!updatedAt) return false;
+ return String(updatedAt).slice(0, 10) >= dayStr(addDays(startOfToday(), -1));
+ }
 
  function loadState() {
  try { return JSON.parse(localStorage.getItem(KEY)) || { stocks: [], trades: [], deleted: [] }; }
@@ -570,16 +576,34 @@
  throw e;
  } finally { clearTimeout(to); }
  }
- // 用合并后的最新 state 重建分红事件并刷新界面；渲染异常不影响“网络已同步”的状态判定
+ // 渲染互斥：build() 与 pullSync()→rebuildAndRender() 在页面初始化时会同时启动。
+ // 旧实现两者各自 fetch、各自 recsByCode=…、各自 renderAllSections()，
+ // 谁后渲染谁覆盖屏幕 —— 陈旧的快照因此能盖掉刚拿到的实时数据。
+ let buildInFlight = null;
+ let renderQueued = false;
  async function rebuildAndRender() {
+ // build 尚未完成：等它（它取的是同一批数据且更完整），结束后统一渲染一次即可
+ if (buildInFlight) {
+ try { await buildInFlight; } catch (e) { /* build 自己会 toast */ }
+ if (renderQueued) return; // 同一轮里只追加一次渲染
+ renderQueued = true;
+ try { await renderOnce(); } finally { renderQueued = false; }
+ return;
+ }
+ await renderOnce();
+ }
+ // 用合并后的最新 state 重建分红事件并刷新界面；渲染异常不影响“网络已同步”的状态判定
+ async function renderOnce() {
  const evs = [];
  for (const st of state.stocks) {
  if (!st.code) continue;
  let recs = recsByCode[st.code]; // 复用 build() 已缓存的分红记录，避免每次轮询都联网
- if (!recs) {
+ if (!recs || !recs.length) {
  try { recs = isFundStock(st) ? await getFundRecords(st) : await getStockRecords(st); }
  catch (e) { recs = []; }
  }
+ // 取不到就保留旧数据，绝不把已有事件抹成空（旧实现 recs=[] 直接覆盖，整月 chips 会消失）
+ if (!recs || !recs.length) recs = recsByCode[st.code] || [];
  recsByCode[st.code] = recs;
  evs.push(...recordsToEvents(st, recs));
  }
@@ -887,6 +911,27 @@
  return fetch(url, { cache: "no-store", signal: ctl.signal }).finally(() => clearTimeout(timer));
  }
 
+ // 快照镜像源：raw.githubusercontent.com 在国内经常不可达（且 Pages 部署资产可能长期冻结），
+ // 因此按顺序尝试 raw → jsDelivr → gcore，任一成功即返回，避免「只有陈旧同域快照可用」。
+ const SNAP_MIRRORS = [
+ "https://raw.githubusercontent.com/fengyin01/stock-ledger/master/",
+ "https://cdn.jsdelivr.net/gh/fengyin01/stock-ledger@master/",
+ "https://gcore.jsdelivr.net/gh/fengyin01/stock-ledger@master/",
+ ];
+ async function fetchSnapJson(file, ms = 8000) {
+ for (const base of SNAP_MIRRORS) {
+ try {
+ const r = await fetchWithTimeout(base + file, ms);
+ if (!r.ok) { snapDiag.push(file + " " + new URL(base).host + " HTTP " + r.status); continue; }
+ const j = await r.json();
+ return j;
+ } catch (e) {
+ snapDiag.push(file + " " + new URL(base).host + " 不可达");
+ }
+ }
+ return null;
+ }
+
  async function fetchDividends(code, force) {
  const hit = cache.byCode[code];
  // 命中缓存且未过期：每支股票独立计时，避免被其他股票的访问"续命"全局时间戳
@@ -960,8 +1005,8 @@
  async function getStockRecords(st, force) {
  const code = normCode(st.code) || st.code; // 兼容 "600690.SH"/"SH600690" 等写法
  const f = stockDividendsJson && stockDividendsJson.stocks && stockDividendsJson.stocks[code];
- if (f && f.records && f.records.length) {
- return f.records.map(d => ({
+ const snapRecs = (f && f.records && f.records.length)
+ ? f.records.map(d => ({
  ps: d.ps != null ? d.ps : null,
  planText: d.planText || "",
  planDate: null,
@@ -970,10 +1015,14 @@
  progress: "分红",
  reportDate: null,
  divYield: null
- }));
- }
- const recs = await fetchDividends(code, force);
- return recs.map(rec => ({
+ }))
+ : [];
+ // 只有新鲜快照才可直接信任（省一次实时请求）；过期快照一律以实时接口为准 ——
+ // 这正是「持仓分红 chips 显示几秒后消失」的根因修复点。
+ if (snapRecs.length && !force && snapFresh(stockDividendsJson && stockDividendsJson.updatedAt)) return snapRecs;
+ let recs = [];
+ try { recs = await fetchDividends(code, force); } catch (e) { recs = []; }
+ const live = (recs || []).map(rec => ({
  ps: perShareOf(rec),
  planText: rec.IMPL_PLAN_PROFILE || "",
  planDate: dateOnly(rec.PLAN_NOTICE_DATE),
@@ -983,6 +1032,9 @@
  reportDate: dateOnly(rec.REPORT_DATE),
  divYield: rec.DIVIDENT_RATIO ? rec.DIVIDENT_RATIO * 100 : null
  }));
+ // 实时接口失败返回空：宁可继续显示旧快照，也不要把整月事件清空
+ if (!live.length) return snapRecs;
+ return live;
  }
  // 加载分红快照：ETF 用同域 fund_dividends.json；股票用 stock_dividends.json（同域优先），
  // 缺失或过期时再从 GitHub raw 拉 Actions 每日刷新的最新版，保证页面自动新鲜、无需重部署。
@@ -1030,6 +1082,10 @@
  } else {
  stockDividendsJson = { updatedAt: "", source: "（未加载）", known: [], stocks: {} };
  }
+ // 只有新鲜快照才落盘：陈旧快照覆盖本机缓存后，下一次开页会一直命中坏数据。
+ const fundOk = snapFresh(fundDividendsJson && fundDividendsJson.updatedAt);
+ const stockOk = snapFresh(stockDividendsJson && stockDividendsJson.updatedAt);
+ if (!fundOk && !stockOk) { snapDiag.push("快照过期，未覆盖本机缓存"); return; }
  try { localStorage.setItem(SNAP_KEY, JSON.stringify({ ts: Date.now(), fund: fundDividendsJson, stock: stockDividendsJson })); }
  catch (e) { /* 配额不足：忽略，下次重新联网拉取即可 */ }
  }
@@ -1072,10 +1128,8 @@
  if (fundStale) {
  // 基金快照：按「单条记录」合并（权益登记日|除息日 去重），raw 里多出来的期次直接补进快照。
  try {
- const rawFundUrl = "https://raw.githubusercontent.com/fengyin01/stock-ledger/master/fund_dividends.json";
- const fr = await fetchWithTimeout(rawFundUrl, 8000);
- if (fr.ok) {
- const rawF = await fr.json();
+ const rawF = await fetchSnapJson("fund_dividends.json", 8000);
+ if (rawF) {
  if (rawF && rawF.funds) {
  if (!fundDividendsJson) fundDividendsJson = { funds: {} };
  if (!fundDividendsJson.funds) fundDividendsJson.funds = {};
@@ -1097,18 +1151,15 @@
  const fRaw = rawF.updatedAt || "";
  if (fRaw > fBase) fundDividendsJson.updatedAt = fRaw;
  if (added > 0) fundDividendsJson.source = (fundDividendsJson.source || "eastmoney snapshot") + " +github-raw(+" + added + ")";
- snapDiag.push("ETF 快照取自 GitHub raw（同域快照 " + (fBase || "缺失") + "）");
+ snapDiag.push("ETF 快照取自镜像（同域快照 " + (fBase || "缺失") + "）");
  }
- } else snapDiag.push("ETF 快照 raw HTTP " + fr.status);
- } catch (e) { snapDiag.push("ETF 快照 raw 不可达"); }
+ }
+ } catch (e) { snapDiag.push("ETF 快照镜像全部不可达"); }
  }
 
  if (stockStale) {
  try {
- const rawUrl = "https://raw.githubusercontent.com/fengyin01/stock-ledger/master/stock_dividends.json";
- const rr = await fetchWithTimeout(rawUrl, 8000);
- if (rr.ok) {
- const raw = await rr.json();
+ const raw = await fetchSnapJson("stock_dividends.json", 8000);
  if (raw && raw.stocks) {
  // 用 updatedAt（YYYY-MM-DD，字典序=时间序）决定 raw 是否真比 base 新
  const baseTs = merged.updatedAt || "";
@@ -1125,10 +1176,9 @@
  }
  if (added > 0) merged.source = (merged.source || "") + " +github-raw(supplemental)";
  }
- snapDiag.push("股票快照合并 GitHub raw（同域 " + (baseTs || "缺失") + " / raw " + (rawTs || "无") + "）");
+ snapDiag.push("股票快照合并镜像（同域 " + (baseTs || "缺失") + " / 镜像 " + (rawTs || "无") + "）");
  }
- } else snapDiag.push("股票快照 raw HTTP " + rr.status);
- } catch (e) { snapDiag.push("股票快照 raw 不可达"); }
+ } catch (e) { snapDiag.push("股票快照镜像全部不可达"); }
  }
 
  stockDividendsJson = merged;
@@ -1139,8 +1189,8 @@
  async function getFundRecords(st) {
  const code = normCode(st.code) || st.code; // 与股票路径一致地归一化（原先直接用 st.code，如 "510300.SH" 会查不到）
  const f = fundDividendsJson && fundDividendsJson.funds && fundDividendsJson.funds[code];
- if (f && f.records && f.records.length) {
- return f.records.map(d => ({
+ const snapRecs = (f && f.records && f.records.length)
+ ? f.records.map(d => ({
  ps: d.perUnit != null ? d.perUnit : null,
  planText: d.per10 != null ? `每10份派现金${d.per10}元` : "",
  planDate: null,
@@ -1150,11 +1200,14 @@
  progress: "基金分红",
  reportDate: d.exDate || null,
  divYield: null
- }));
- }
+ }))
+ : [];
+ // 与股票同口径：过期快照只作为兜底，不能挡住天天基金实时分红
+ if (snapRecs.length && snapFresh(fundDividendsJson && fundDividendsJson.updatedAt)) return snapRecs;
  // 回退：天天基金净值走势（unitMoney 仅含除息日，无登记日/发放日）
- const divs = await fetchFundDividends(code);
- return divs.map(d => ({
+ let divs = [];
+ try { divs = await fetchFundDividends(code); } catch (e) { divs = []; }
+ const live = (divs || []).map(d => ({
  ps: d.perUnit,
  planText: "",
  planDate: null, recordDate: null,
@@ -1164,6 +1217,8 @@
  reportDate: d.date,
  divYield: null
  }));
+ if (!live.length) return snapRecs;
+ return live;
  }
 
  // 把 allEvents 重新索引 + 渲染所有区块（build 与同步拉取后共用）
@@ -1184,24 +1239,35 @@
  }
 
  async function build(force) {
+ if (buildInFlight) return buildInFlight; // 并发点「刷新分红」只跑一次
+ const p = buildInner(force);
+ buildInFlight = p;
+ try { return await p; } finally { buildInFlight = null; }
+ }
+ async function buildInner(force) {
  const btn = document.getElementById("btnRefresh");
  btn.textContent = "⏳ 拉取中…";
  try {
  await loadSnapshots(force);
  const evs = [];
- recsByCode = {};
+ // 先写局部对象，全部取完再整体替换：绝不在 await 之前清空 recsByCode，
+ // 否则与 pullSync→rebuildAndRender 并发时会渲染出一张空表（chips 全部消失）。
+ const next = {};
  for (const st of state.stocks) {
  if (!st.code) continue;
  // 股票走东方财富；ETF/LOF/基金走天天基金（重新确认当前持仓的真实分红）
  let recs = [];
  try {
  recs = isFundStock(st) ? await getFundRecords(st) : await getStockRecords(st, force);
+ if (!recs || !recs.length) recs = recsByCode[st.code] || [];
  } catch (e) {
  console.error("分红数据获取失败", st.code, e); // 单只失败不影响其它持仓
+ recs = recsByCode[st.code] || [];
  }
- recsByCode[st.code] = recs;
+ next[st.code] = recs;
  evs.push(...recordsToEvents(st, recs));
  }
+ recsByCode = next;
  allEvents = evs;
  indexEvents();
  const failed = renderAllSections();
@@ -1224,8 +1290,9 @@
  const s = stockDividendsJson || {};
  const f = fundDividendsJson || {};
  const parts = [];
- parts.push("股票：东方财富 RPT_SHAREBONUS_DET 实时接口" + (s.updatedAt ? " · 快照 " + esc(s.updatedAt) : ""));
- parts.push("ETF：" + (f.updatedAt ? "fund_dividends.json 快照 " + esc(f.updatedAt) : "快照未加载"));
+ const sFresh = snapFresh(s.updatedAt), fFresh = snapFresh(f.updatedAt);
+ parts.push("股票：东方财富 RPT_SHAREBONUS_DET 实时接口" + (s.updatedAt ? " · 快照 " + esc(s.updatedAt) + (sFresh ? "" : "<span class=\"warn\">（已过期，以实时接口为准）</span>") : ""));
+ parts.push("ETF：" + (f.updatedAt ? "fund_dividends.json 快照 " + esc(f.updatedAt) + (fFresh ? "" : "<span class=\"warn\">（已过期）</span>") : "<span class=\"warn\">快照未加载</span>"));
  if (snapDiag.length) parts.push("本次加载：" + snapDiag.map(esc).join("；"));
  const funds = state.stocks.filter(isFundStock);
  const missFund = funds.filter(st => {
