@@ -955,9 +955,22 @@
  function syncErrMsg(e) {
  if (e && e.status === 401) return "同步失败：GitHub 令牌无效或已过期";
  if (e && e.status === 403) return "同步失败：令牌缺少 gist 权限";
- if (e && e.status === 404) return "同步失败：同步码（Gist ID）不存在";
+ if (e && e.status === 404) return "同步失败：同步码不存在（两台设备的同步码必须完全一致）";
  if (e && e.status === "timeout") return "同步失败：请求超时，请检查网络";
  return "同步失败：GitHub 不可达或网络异常";
+ }
+ // 首次打开页面会自动灌入两条示例交易（中国核电/华能国际）用于演示，标了 demo:true。
+ // 若不剔除，新电脑一加入账本就把它自己的示例数据推上云端，污染另一端。
+ // 只认 demo 标记，不能用「无 updatedAt」判断：老版本/导入的真实记录也可能没有该字段，
+ // 那样会把用户自己的历史交易当成示例删掉。
+ function stripDemoSeed() {
+ const isDemo = x => x && x.demo === true;
+ const n = (state.trades || []).filter(isDemo).length + (state.stocks || []).filter(isDemo).length;
+ if (!n) return 0;
+ state.trades = (state.trades || []).filter(x => !isDemo(x));
+ state.stocks = (state.stocks || []).filter(x => !isDemo(x));
+ save({ noTouch: true, skipPush: true });
+ return n;
  }
  // 按 id 做「最后写入获胜」(LWW) 合并
  function mergeArr(a, b) {
@@ -991,7 +1004,10 @@
  const to = setTimeout(() => ctrl.abort(), 12000);
  try {
  const res = await fetch("https://api.github.com/gists/" + encodeURIComponent(sync.room) + "?t=" + Date.now(), { headers: gistHeaders(), cache: "no-store", signal: ctrl.signal });
- if (res.status === 404) return null;
+ // 404 = 同步码对应的账本不存在（多半是同步码粘错/另一台设备还没建）。
+ // 旧实现返回 null 交给调用方当「空账本」处理，于是状态点照样亮成绿色「已同步」，
+ // 用户以为同步好了，其实两边什么都没传 —— 必须当错误暴露出来。
+ if (res.status === 404) { const err = new Error("notfound"); err.status = 404; throw err; }
  if (!res.ok) { const err = new Error("http"); err.status = res.status; throw err; }
  const data = await res.json();
  const f = data.files && data.files[GIST_FILE];
@@ -1061,8 +1077,10 @@
  sync.lastSeen = Date.now();
  saveSyncCfg();
  setDot("on", "已同步 · " + nowTime());
+ return true;
  } catch (e) {
  setDot("fail", syncErrMsg(e));
+ return false;
  } finally {
  suppressPush = false;
  }
@@ -1083,10 +1101,20 @@
  saveSyncCfg();
  save({ noTouch: true, skipPush: true });
  renderAll();
+ // 只拉不推 = 本机新增（尤其是「第二台电脑加入账本」时本机已有的交易与持仓）
+ // 永远上不了云端，另一端也就永远看不到。旧实现就是只 pull，导致两台电脑
+ // 各自记账、看起来「同步了」其实各写各的。此处一旦发现本机有云端没有的
+ // 记录，补一次 push 做双向收敛（pushSync 内部仍先拉后推，不会回退）。
+ const merged = new Map((r.trades || []).map(t => [t.id, t]));
+ const hasLocalOnly = (state.trades || []).some(t => !merged.has(t.id)) ||
+   (state.stocks || []).some(s => !(r.stocks || []).some(x => x.id === s.id));
+ if (hasLocalOnly) { suppressPush = false; return await pushSync(); }
  }
  setDot("on", "已同步 · " + nowTime());
+ return true;
  } catch (e) {
  setDot("fail", syncErrMsg(e));
+ return false;
  } finally {
  suppressPush = false;
  }
@@ -1970,6 +1998,9 @@
  } else {
  sync.room = enteredRoom;
  }
+ // 示例数据不能跟着上传：新电脑首次打开会自动灌入两条演示交易，
+ // 若直接推送会把它们写进同一份账本，另一端凭空多出两笔不存在的持仓。
+ const demoStripped = stripDemoSeed();
  saveSyncCfg();
  $("#syncRoom").value = sync.room;
  renderSyncBtn();
@@ -1978,8 +2009,20 @@
  try { history.replaceState(null, "", location.pathname + location.search + (location.hash.replace(/sync=[^&]+/i, "").replace(/^#?&?$/, "") || "")); } catch (e) {}
  }
  closeMask("syncMask");
- toast(created ? ("已生成同步码：" + sync.room + "（请抄到另一台设备）") : "正在同步…");
- pullSync().then(startSyncPolling);
+ toast(created ? ("已生成同步码：" + sync.room + "（请抄到另一台设备）" + (demoStripped ? "（已剔除 " + demoStripped + " 条示例数据）" : "")) : "正在同步…");
+ // 旧实现这里只调 pullSync()：只拉不推。于是「加入已有账本的那台设备」本机
+ // 已有的交易与持仓永远上不了云端，另一端也就永远看不到 —— 正是用户反馈的
+ // 「交易记录不同电脑没同步」。pushSync 内部先拉后推做 LWW 合并，安全。
+ pushSync().then(ok => {
+ if (!ok) {
+ // 同步码填错 / 账本已删：不要留着「已启用」的假象每 15 秒空转，
+ // 也不要让用户以为同步成功。
+ sync.enabled = false; saveSyncCfg(); stopSyncPolling(); renderSyncBtn();
+ toast(created ? "同步未能建立，请检查令牌的 gist 权限" : "加入失败：同步码不存在，请核对另一台设备上的同步码");
+ return;
+ }
+ if (sync.enabled) startSyncPolling();
+ });
  };
  $("#syncDisable").onclick = () => {
  sync.enabled = false; saveSyncCfg(); stopSyncPolling(); setDot("", "未同步"); renderSyncBtn();
@@ -2004,12 +2047,12 @@
  if (!localStorage.getItem(KEY)) {
  state = {
  stocks: [
- { id: uid(), name: "中国核电", code: "601985", sector: "电力", tag: "央企", price: 8.80, prevClose: 8.83, dividend: 0.180, yield: 2.05, marketCap: 1810, shares: 1000, cost: 7.120, taxFree: false, note: "" },
- { id: uid(), name: "华能国际", code: "600011", sector: "电力", tag: "央企", price: 6.99, prevClose: 7.01, dividend: 0.400, yield: 5.72, marketCap: 1097, shares: 1700, cost: 7.350, taxFree: false, note: "" }
+ { id: uid(), name: "中国核电", code: "601985", sector: "电力", tag: "央企", price: 8.80, prevClose: 8.83, dividend: 0.180, yield: 2.05, marketCap: 1810, shares: 1000, cost: 7.120, taxFree: false, note: "", demo: true },
+ { id: uid(), name: "华能国际", code: "600011", sector: "电力", tag: "央企", price: 6.99, prevClose: 7.01, dividend: 0.400, yield: 5.72, marketCap: 1097, shares: 1700, cost: 7.350, taxFree: false, note: "", demo: true }
  ],
  trades: [
- { id: uid(), code: "601985", name: "中国核电", type: "buy", date: "2026-01-10", price: 7.12, qty: 1000, fee: 7.12, note: "" },
- { id: uid(), code: "600011", name: "华能国际", type: "buy", date: "2026-02-05", price: 7.35, qty: 1700, fee: 12.50, note: "" }
+ { id: uid(), code: "601985", name: "中国核电", type: "buy", date: "2026-01-10", price: 7.12, qty: 1000, fee: 7.12, note: "", demo: true },
+ { id: uid(), code: "600011", name: "华能国际", type: "buy", date: "2026-02-05", price: 7.35, qty: 1700, fee: 12.50, note: "", demo: true }
  ],
  deleted: []
  };
