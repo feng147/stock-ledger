@@ -1280,7 +1280,13 @@
  <div class="cost-yield">成本股息率 ${fmt(costYield,2)}%</div>
  </div>
  <div class="yield-note">股息率(TTM) = 上一年度合计分红 ¥${fmt(div,3)} ÷ 现价 ¥${fmt(price,2)}</div>
- <div class="cost-note">${pastDiv > 0 ? `除息后成本价 ¥${fmt(adjCost, isFundStock(s)?3:2)}（已扣累计分红 ¥${fmt(pastDiv,3)}）` : `成本价 ¥${fmt(cost, isFundStock(s)?3:2)}`}</div>
+ ${(() => {
+ const dec = isFundStock(s) ? 3 : 2;
+ const costText = cost > 0 ? `成本价 ¥${fmt(adjCost, dec)}` : "成本价 —";
+ const shareText = shares > 0 ? `持仓 ${fmt(shares,0)} 股` : "未记录持仓";
+ const tip = pastDiv > 0 ? `成本价已扣累计分红 ¥${fmt(pastDiv,3)}/股（原始成本 ¥${fmt(cost, dec)}）` : "";
+ return `<div class="cost-note"${tip ? ` title="${tip}"` : ""}>${shareText} · ${costText}</div>`;
+ })()}
  </div>
  <div class="card-side">
  <div class="input-row">
@@ -1289,7 +1295,7 @@
  <input type="number" step="1" data-shares="${s.id}" value="${shares > 0 ? shares : ""}" placeholder="0">
  </div>
  <div class="field-compact">
- <label>原始成本价</label>
+ <label title="手填买入成本，展示时自动扣减累计已除息分红">成本价</label>
  <input type="number" step="0.001" data-cost="${s.id}" value="${cost > 0 ? cost : ""}" placeholder="0.000">
  </div>
  </div>
