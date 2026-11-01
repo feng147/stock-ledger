@@ -85,6 +85,12 @@
  .refresh-chips button:hover { border-color: var(--text-2); }
  .refresh-chips button.active { background: var(--primary); color: #FCFAF3; border-color: var(--primary); }
  .subbar-right { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+ @media (max-width: 720px) {
+ .subbar-inner { flex-wrap: wrap; gap: 6px 10px; padding: 8px 12px; }
+ .subbar-right { width: 100%; gap: 12px 14px; justify-content: flex-start; }
+ .refresh-set { gap: 6px; font-size: 12px; }
+ .refresh-chips button { padding: 3px 8px; font-size: 11px; }
+ }
 
  /* ---- Sub header ---- */
  .sub-header { text-align: center; padding: 18px 0 6px; }
@@ -535,6 +541,13 @@
  <div class="refresh-chips" id="pnlChips">
  <button data-realized="0" class="active">仅持仓</button>
  <button data-realized="1">含已实现</button>
+ </div>
+ </div>
+ <div class="refresh-set">
+ <span title="成本价口径：均价＝移动加权平均成本（卖出只减数量、不改均价）；摊薄＝把卖出净收从买入成本里扣掉后的保本价">成本价</span>
+ <div class="refresh-chips" id="costChips">
+ <button data-basis="avg" class="active">均价</button>
+ <button data-basis="diluted">摊薄</button>
  </div>
  </div>
  </div>
@@ -1206,6 +1219,19 @@
 
  // 该股累计已实现盈亏（所有卖出记录的 成交额-成本，含手续费）
  // 与卡片「持仓盈亏」互为补充：持仓盈亏只算剩余仓位，这里算已经卖掉落袋的部分
+ // 该股现金流：买入总额（含费）与卖出净收（扣费），摊薄成本用
+ function tradeFlow(code) {
+ let bought = 0, sold = 0;
+ (state.trades || []).forEach(t => {
+ if ((t.code || "") !== code) return;
+ const amt = (Number(t.price) || 0) * (Number(t.qty) || 0);
+ const fee = Number(t.fee) || 0;
+ if (t.type === "buy") bought += amt + fee;
+ else if (t.type === "sell") sold += amt - fee;
+ });
+ return { bought, sold, hasFlow: (bought > 0 || sold > 0) };
+ }
+
  function realizedPnl(code) {
  const { tradePnl } = compute();
  return (state.trades || []).reduce((sum, t) => {
@@ -1214,6 +1240,11 @@
  return sum + (Number.isFinite(v) ? v : 0);
  }, 0);
  }
+
+ // ---------- 成本价口径（仅影响展示，不改存储与交易计算） ----------
+ // avg：移动加权平均成本（卖出不改均价）；diluted：把卖出净收从剩余持仓成本里扣掉的保本价
+ var costMode = "avg";
+ function costBasisLabel(mode) { return mode === "diluted" ? "摊薄" : "均价"; }
 
  // ---------- Effective stock metrics ----------
  // Returns per-stock effective shares/cost: manual overrides trade-computed
@@ -1225,7 +1256,19 @@
  // 除息后成本价：原价 − 累计已除息每股分红（显示/P&L 用，原 cost 不变、不污染存储与多端同步）
  const pastDiv = pastDividendPerShare(s.code);
  const adjCost = cost > 0 ? Math.max(0, cost - pastDiv) : cost;
- return { shares, cost, adjCost, pastDiv };
+ // 摊薄成本：(累计买入总额 − 累计卖出净收) ÷ 现持股数，再扣累计已除息分红
+ // 手填持仓 / 期初基线没有买卖流水，无法摊薄，回退到均价口径
+ const flow = tradeFlow(s.code);
+ // 只有“买卖流水能对上剩余持仓”时摊薄才有意义：净投入 ≤ 0 说明已全部回本或数据不匹配，回退均价
+ const netIn = flow.bought - flow.sold;
+ const canDilute = flow.hasFlow && shares > 0 && netIn > 0;
+ const dilutedNet = canDilute ? netIn : 0;
+ const dilutedCost = canDilute ? Math.max(0, dilutedNet / shares - pastDiv) : adjCost;
+ // basisCost：当前选中口径下用于展示与浮盈计算的成本价
+ const basisCost = (costMode === "diluted" && canDilute) ? dilutedCost : adjCost;
+ // basisTotal：剩余持仓的成本基数（百分比分母）
+ const basisTotal = canDilute && costMode === "diluted" ? dilutedNet : adjCost * shares;
+ return { shares, cost, adjCost, pastDiv, dilutedCost, basisCost, basisTotal, dilutedNet, canDilute };
  }
 
  // ---------- Render ----------
@@ -1251,8 +1294,8 @@
  });
  else if (sortBy === "pnl") list.sort((a,b)=> {
  const pa = Number(a.price)||0, pb = Number(b.price)||0;
- const { shares: sa, adjCost: ca } = effectiveStock(a);
- const { shares: sb, adjCost: cb } = effectiveStock(b);
+ const { shares: sa, basisCost: ca } = effectiveStock(a);
+ const { shares: sb, basisCost: cb } = effectiveStock(b);
  const ra = ca > 0 ? ((pa-ca)/ca)*(sa>0?1:0) : -Infinity;
  const rb = cb > 0 ? ((pb-cb)/cb)*(sb>0?1:0) : -Infinity;
  return rb - ra;
@@ -1269,7 +1312,7 @@
  }
  const totalMV = state.stocks.reduce((sum,s)=> sum + effectiveStock(s).shares*(Number(s.price)||0), 0);
  const rows = list.map(s => {
- const { shares, cost, adjCost, pastDiv } = effectiveStock(s);
+ const { shares, cost, adjCost, pastDiv, basisCost, basisTotal, canDilute } = effectiveStock(s);
  const price = Number(s.price) || 0;
  const prev = Number(s.prevClose) || 0;
  const chg = prev > 0 ? (price - prev) / prev * 100 : null;
@@ -1279,19 +1322,22 @@
  const effYield = (price > 0 && div > 0) ? div / price * 100 : null;
  // 已实现盈亏：该股所有卖出记录落袋的盈亏之和（与剩余持仓无关）
  const realized = realizedPnl(s.code);
- const holdingPnl = shares > 0 ? (price - adjCost) * shares : 0;
+ // 浮盈按当前口径的成本价算（均价 / 摊薄）
+ const holdingPnl = shares > 0 ? (price - basisCost) * shares : 0;
  // 开关打开时，卡片显示「持仓盈亏 + 已实现盈亏」的总盈亏；关闭时与旧版完全一致
- const showRealized = totalPnlMode;
+ // 摊薄口径下浮盈已天然含卖出回款（等价于总盈亏），不再叠加已实现
+ const dilutedBasis = costMode === "diluted" && canDilute;
+ const showRealized = totalPnlMode && !dilutedBasis;
  const pnl = holdingPnl + (showRealized ? realized : 0);
  // 分母仍是「剩余持仓成本」：已实现那部分本金已出表，摊进分母会让百分比失真
- const pnlPct = adjCost > 0
- ? (showRealized && shares > 0 ? pnl / (adjCost * shares) : (price - adjCost) / adjCost) * 100
+ const pnlPct = basisCost > 0
+ ? (showRealized && shares > 0 ? pnl / (basisTotal || (basisCost * shares)) : (price - basisCost) / basisCost) * 100
  : 0;
- const pnlLabel = showRealized ? "总盈亏" : "持仓盈亏";
+ const pnlLabel = (showRealized || dilutedBasis) ? "总盈亏" : "持仓盈亏";
  const money = n => `${n < 0 ? "-" : (n > 0 ? "+" : "")}¥${fmt(Math.abs(n))}`;
- const pnlTip = showRealized
- ? `持仓 ${money(holdingPnl)} + 已实现 ${money(realized)}`
- : "";
+ const pnlTip = dilutedBasis
+ ? `摊薄成本已扣卖出净收，浮盈即总盈亏；持仓部分成本 ¥${fmt(basisTotal || (basisCost * shares))}`
+ : (showRealized ? `持仓 ${money(holdingPnl)} + 已实现 ${money(realized)}` : "");
  const mv = shares * price;
  const weight = totalMV > 0 ? mv / totalMV * 100 : 0;
  const costYield = cost > 0 ? ((Number(s.dividend)||0) / cost * 100) : 0;
@@ -1324,9 +1370,16 @@
  <div class="yield-note">股息率(TTM) = 上一年度合计分红 ¥${fmt(div,3)} ÷ 现价 ¥${fmt(price,2)}</div>
  ${(() => {
  const dec = costDecimals(s);
- const costText = cost > 0 ? `成本价 ¥${fmt(adjCost, dec)}` : "成本价 —";
+ const dilutedOn = costMode === "diluted" && canDilute;
+ const showCost = dilutedOn ? basisCost : adjCost;
+ const costLabel = dilutedOn ? "摊薄成本" : "成本价";
+ const costText = cost > 0 ? `${costLabel} ¥${fmt(showCost, dec)}` : `${costLabel} —`;
  const shareText = shares > 0 ? `持仓 ${fmt(shares,0)} 股` : "未记录持仓";
- const tip = pastDiv > 0 ? `成本价已扣累计分红 ¥${fmt(pastDiv,3)}/股（原始成本 ¥${fmt(cost, dec)}）` : "";
+ const tipParts = [];
+ if (dilutedOn) tipParts.push(`摊薄成本＝（买入成本 − 卖出净收）÷ 持仓股数`);
+ else if (pastDiv > 0) tipParts.push(`成本价已扣累计分红 ¥${fmt(pastDiv,3)}/股`);
+ if (pastDiv > 0) tipParts.push(`原始成本 ¥${fmt(cost, dec)}，已扣分红 ¥${fmt(pastDiv,3)}`);
+ const tip = tipParts.join("；");
  return `<div class="cost-note"${tip ? ` title="${tip}"` : ""}>${shareText} · ${costText}</div>`;
  })()}
  </div>
@@ -1771,6 +1824,24 @@
  if (v != null) setPnlMode(v === "1");
  });
 
+ // ---------- 成本价口径开关（仅影响展示，不改存储与交易计算） ----------
+ // avg：移动加权平均成本（卖出不改均价）；diluted：把卖出净收从剩余持仓成本里扣掉的保本价
+ function loadCostMode() {
+ try { costMode = localStorage.getItem("mmbf_cost_mode") === "diluted" ? "diluted" : "avg"; } catch(e) { costMode = "avg"; }
+ $$('#costChips button').forEach(b => b.classList.toggle("active", (b.dataset.basis || "avg") === costMode));
+ }
+ function setCostMode(mode) {
+ costMode = mode === "diluted" ? "diluted" : "avg";
+ try { localStorage.setItem("mmbf_cost_mode", costMode); } catch(e) {}
+ $$('#costChips button').forEach(b => b.classList.toggle("active", (b.dataset.basis || "avg") === costMode));
+ renderWatch();
+ }
+ const costChips = $("#costChips");
+ if (costChips) costChips.addEventListener("click", e => {
+ const v = e.target.dataset.basis;
+ if (v != null) setCostMode(v);
+ });
+
  // 手动填写代码后失焦自动获取
  $("#sCode").addEventListener("blur", () => {
  const c = $("#sCode").value.trim();
@@ -1918,9 +1989,9 @@
  histCode = code;
  const s = state.stocks.find(x => (x.code || "") === code);
  $("#histTitle").textContent = (s ? s.name : code) + " · 交易历史";
- const eff = s ? effectiveStock(s) : { shares: 0, cost: 0 };
+ const eff = s ? effectiveStock(s) : { shares: 0, cost: 0, basisCost: 0 };
  $("#histSummary").textContent = eff.shares > 0
- ? `当前持仓 ${fmt(eff.shares,0)} 股 · 成本 ¥${fmt(eff.cost, costDecimals(s))}`
+ ? `当前持仓 ${fmt(eff.shares,0)} 股 · ${costMode === "diluted" ? "摊薄成本" : "成本"} ¥${fmt(eff.basisCost, costDecimals(s))}`
  : "当前无持仓";
  renderTradeHist();
  openMask("tradeHistMask");
@@ -2188,6 +2259,7 @@
  setInterval(updateMarketStatus, 60000);
  loadRefreshSetting();
  loadPnlMode();
+ loadCostMode();
  startAutoRefresh();
  loadExMap();
 
