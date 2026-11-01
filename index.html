@@ -929,6 +929,10 @@
  }
  function stockByCode(code) { return state.stocks.find(x => (x.code||"") === code); }
  function priceDecimals(code) { const s = stockByCode(code); return s && isFundStock(s) ? 3 : 2; }
+ // 成本价展示小数位：个股 2 位、场内基金/ETF 3 位（与现价口径一致）
+ function costDecimals(s) { return isFundStock(s) ? 3 : 2; }
+ // 填报位用：不分组、不带千分位，否则 number 输入框会判为非法值
+ function fmtInput(n, d) { return (n === null || n === undefined || isNaN(n)) ? "" : Number(n).toFixed(d); }
  function sign(n) { return n > 0 ? "+" : ""; }
  function cls(n) { return n > 0 ? "up" : (n < 0 ? "down" : ""); }
  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -1281,7 +1285,7 @@
  </div>
  <div class="yield-note">股息率(TTM) = 上一年度合计分红 ¥${fmt(div,3)} ÷ 现价 ¥${fmt(price,2)}</div>
  ${(() => {
- const dec = isFundStock(s) ? 3 : 2;
+ const dec = costDecimals(s);
  const costText = cost > 0 ? `成本价 ¥${fmt(adjCost, dec)}` : "成本价 —";
  const shareText = shares > 0 ? `持仓 ${fmt(shares,0)} 股` : "未记录持仓";
  const tip = pastDiv > 0 ? `成本价已扣累计分红 ¥${fmt(pastDiv,3)}/股（原始成本 ¥${fmt(cost, dec)}）` : "";
@@ -1296,7 +1300,7 @@
  </div>
  <div class="field-compact">
  <label title="手填买入成本，展示时自动扣减累计已除息分红">成本价</label>
- <input type="number" step="0.001" data-cost="${s.id}" value="${cost > 0 ? cost : ""}" placeholder="0.000">
+ <input type="number" step="0.001" data-cost="${s.id}" value="${cost > 0 ? fmtInput(cost, costDecimals(s)) : ""}" placeholder="${costDecimals(s) === 3 ? "0.000" : "0.00"}">
  </div>
  </div>
  <div class="summary-pink">
@@ -1857,7 +1861,7 @@
  $("#histTitle").textContent = (s ? s.name : code) + " · 交易历史";
  const eff = s ? effectiveStock(s) : { shares: 0, cost: 0 };
  $("#histSummary").textContent = eff.shares > 0
- ? `当前持仓 ${fmt(eff.shares,0)} 股 · 成本 ¥${fmt(eff.cost)}`
+ ? `当前持仓 ${fmt(eff.shares,0)} 股 · 成本 ¥${fmt(eff.cost, costDecimals(s))}`
  : "当前无持仓";
  renderTradeHist();
  openMask("tradeHistMask");
