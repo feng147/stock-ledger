@@ -84,6 +84,7 @@
  }
  .refresh-chips button:hover { border-color: var(--text-2); }
  .refresh-chips button.active { background: var(--primary); color: #FCFAF3; border-color: var(--primary); }
+ .subbar-right { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 
  /* ---- Sub header ---- */
  .sub-header { text-align: center; padding: 18px 0 6px; }
@@ -197,6 +198,10 @@
  display: flex; justify-content: space-between; gap: 10px; margin-top: 9px; padding-top: 8px;
  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3);
  border-top: 1px dotted var(--rule-2);
+ }
+ .realized-note {
+ margin-top: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3);
+ font-variant-numeric: tabular-nums; text-align: right;
  }
  .card-footer { display: flex; flex-wrap: wrap; gap: 0 2px; border-top: none; margin-top: 12px; padding-top: 0; }
  .card-footer button {
@@ -516,12 +521,21 @@
  <span class="market-dot" id="marketDot"></span>
  <span id="marketText">—</span>
  </div>
+ <div class="subbar-right">
  <div class="refresh-set">
  <span>自动刷新</span>
  <div class="refresh-chips" id="refreshChips">
  <button data-ms="10000">10秒</button>
  <button data-ms="30000">30秒</button>
  <button data-ms="60000" class="active">1分钟</button>
+ </div>
+ </div>
+ <div class="refresh-set">
+ <span title="开启后，个股「持仓盈亏」改为含已实现盈亏的总盈亏">总盈亏</span>
+ <div class="refresh-chips" id="pnlChips">
+ <button data-realized="0" class="active">仅持仓</button>
+ <button data-realized="1">含已实现</button>
+ </div>
  </div>
  </div>
  </div>
@@ -1190,6 +1204,17 @@
  }, 0);
  }
 
+ // 该股累计已实现盈亏（所有卖出记录的 成交额-成本，含手续费）
+ // 与卡片「持仓盈亏」互为补充：持仓盈亏只算剩余仓位，这里算已经卖掉落袋的部分
+ function realizedPnl(code) {
+ const { tradePnl } = compute();
+ return (state.trades || []).reduce((sum, t) => {
+ if ((t.code || "") !== code || t.type !== "sell") return sum;
+ const v = tradePnl[t.id];
+ return sum + (Number.isFinite(v) ? v : 0);
+ }, 0);
+ }
+
  // ---------- Effective stock metrics ----------
  // Returns per-stock effective shares/cost: manual overrides trade-computed
  function effectiveStock(s) {
@@ -1252,8 +1277,21 @@
  const annualDiv = shares * div;
  const monthlyDiv = annualDiv / 12;
  const effYield = (price > 0 && div > 0) ? div / price * 100 : null;
- const pnl = shares > 0 ? (price - adjCost) * shares : 0;
- const pnlPct = adjCost > 0 ? (price - adjCost) / adjCost * 100 : 0;
+ // 已实现盈亏：该股所有卖出记录落袋的盈亏之和（与剩余持仓无关）
+ const realized = realizedPnl(s.code);
+ const holdingPnl = shares > 0 ? (price - adjCost) * shares : 0;
+ // 开关打开时，卡片显示「持仓盈亏 + 已实现盈亏」的总盈亏；关闭时与旧版完全一致
+ const showRealized = totalPnlMode;
+ const pnl = holdingPnl + (showRealized ? realized : 0);
+ // 分母仍是「剩余持仓成本」：已实现那部分本金已出表，摊进分母会让百分比失真
+ const pnlPct = adjCost > 0
+ ? (showRealized && shares > 0 ? pnl / (adjCost * shares) : (price - adjCost) / adjCost) * 100
+ : 0;
+ const pnlLabel = showRealized ? "总盈亏" : "持仓盈亏";
+ const money = n => `${n < 0 ? "-" : (n > 0 ? "+" : "")}¥${fmt(Math.abs(n))}`;
+ const pnlTip = showRealized
+ ? `持仓 ${money(holdingPnl)} + 已实现 ${money(realized)}`
+ : "";
  const mv = shares * price;
  const weight = totalMV > 0 ? mv / totalMV * 100 : 0;
  const costYield = cost > 0 ? ((Number(s.dividend)||0) / cost * 100) : 0;
@@ -1306,8 +1344,9 @@
  <div class="summary-pink">
  <div class="sum-item"><div class="sum-label">年红利</div><div class="sum-value">¥${fmt(annualDiv)}</div></div>
  <div class="sum-item"><div class="sum-label">月均</div><div class="sum-value">¥${fmt(monthlyDiv)}</div></div>
- <div class="sum-item"><div class="sum-label">持仓盈亏</div><div class="sum-value ${cls(pnl)}">${sign(pnl)}¥${fmt(pnl)} (${sign(pnlPct)}${fmt(pnlPct,2)}%)</div></div>
+ <div class="sum-item"><div class="sum-label"${pnlTip ? ` title="${pnlTip}"` : ""}>${pnlLabel}</div><div class="sum-value ${cls(pnl)}"${pnlTip ? ` title="${pnlTip}"` : ""}>${sign(pnl)}¥${fmt(pnl)} (${sign(pnlPct)}${fmt(pnlPct,2)}%)</div></div>
  </div>
+ ${showRealized && realized !== 0 ? `<div class="realized-note">已实现 ${money(realized)}（卖出 ${state.trades.filter(t => (t.code||"") === s.code && t.type === "sell").length} 笔） · 持仓部分 ${money(holdingPnl)}</div>` : ""}
  <div class="metrics-row">
  <span>持有市值 ¥${fmt(mv)}</span>
  <span>仓位占比 ${fmt(weight,1)}%</span>
@@ -1710,6 +1749,26 @@
  }
  $("#refreshChips").addEventListener("click", e => {
  if (e.target.dataset.ms) setAutoRefreshMs(Number(e.target.dataset.ms));
+ });
+
+ // ---------- 总盈亏开关（仅影响展示，不改存储与计算口径） ----------
+ // 关闭：卡片「持仓盈亏」= 剩余持仓浮盈（旧版行为）
+ // 打开：卡片「总盈亏」= 剩余持仓浮盈 + 该股所有卖出记录的已实现盈亏
+ let totalPnlMode = false;
+ function loadPnlMode() {
+ try { totalPnlMode = localStorage.getItem("mmbf_total_pnl") === "1"; } catch(e) {}
+ $$('#pnlChips button').forEach(b => b.classList.toggle("active", (b.dataset.realized === "1") === totalPnlMode));
+ }
+ function setPnlMode(on) {
+ totalPnlMode = !!on;
+ try { localStorage.setItem("mmbf_total_pnl", totalPnlMode ? "1" : "0"); } catch(e) {}
+ $$('#pnlChips button').forEach(b => b.classList.toggle("active", (b.dataset.realized === "1") === totalPnlMode));
+ renderWatch();
+ }
+ const pnlChips = $("#pnlChips");
+ if (pnlChips) pnlChips.addEventListener("click", e => {
+ const v = e.target.dataset.realized;
+ if (v != null) setPnlMode(v === "1");
  });
 
  // 手动填写代码后失焦自动获取
@@ -2128,6 +2187,7 @@
  updateMarketStatus();
  setInterval(updateMarketStatus, 60000);
  loadRefreshSetting();
+ loadPnlMode();
  startAutoRefresh();
  loadExMap();
 
