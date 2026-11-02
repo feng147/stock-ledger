@@ -158,7 +158,28 @@
  .tag-blue { background: var(--blue-tag); color: var(--blue-text); }
  .tag-red { background: var(--primary-soft); color: var(--primary); }
  .tag-gray { background: var(--gray-tag); color: var(--gray-text); }
- .stock-price { text-align: right; flex: 0 0 auto; }
+ .tag-green { background: #E7F0E6; color: var(--down); }
+ .tag-yellow { background: #F7ECD3; color: #8A6415; }
+ .stock-price { text-align: right; flex: 0 0 auto; display: flex; align-items: flex-start; gap: 8px; }
+ .stock-price-main { text-align: right; flex: 0 0 auto; }
+ .fold-btn {
+ flex: 0 0 auto; width: 20px; height: 20px; margin-top: 3px; padding: 0;
+ display: inline-flex; align-items: center; justify-content: center;
+ border: 1px solid var(--border); background: transparent; color: var(--text-3);
+ border-radius: 2px; cursor: pointer; font-size: 9px; line-height: 1;
+ transition: transform .18s ease, color .15s;
+ }
+ .fold-btn:hover { color: var(--text); border-color: var(--ink-2); }
+ .stock-card.collapsed .fold-btn { transform: rotate(-90deg); }
+ .stock-card.collapsed .card-row,
+ .stock-card.collapsed .yield-note,
+ .stock-card.collapsed .cost-note,
+ .stock-card.collapsed .card-side,
+ .stock-card.collapsed .summary-pink,
+ .stock-card.collapsed .realized-note,
+ .stock-card.collapsed .metrics-row,
+ .stock-card.collapsed .card-footer { display: none; }
+ .cur-suf { font-size: 10px; font-weight: 600; color: var(--text-3); margin-left: 2px; letter-spacing: .3px; }
  .price-now { font-family: var(--font-mono); font-size: 19px; font-weight: 700; letter-spacing: -.5px; }
  .price-chg { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; }
  .dividend-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; letter-spacing: .4px; }
@@ -484,7 +505,7 @@
  .stock-card { grid-template-columns: minmax(0, 1fr) 396px; column-gap: 44px; }
  .card-row { justify-content: flex-start; gap: 26px; }
  .card-top { align-items: flex-start; }
- .stock-price { min-width: 120px; }
+ .stock-price { min-width: 150px; }
 }
 
 /* 分节标题：报纸栏目签 */
@@ -960,6 +981,31 @@
  function costDecimals(s) { return isFundStock(s) ? 3 : 2; }
  // 填报位用：不分组、不带千分位，否则 number 输入框会判为非法值
  function fmtInput(n, d) { return (n === null || n === undefined || isNaN(n)) ? "" : Number(n).toFixed(d); }
+ // 币种：currency 是本应用唯一的货币字段（CNY 缺省 / HKD / USD）
+ function currencyOf(s) { return s && s.currency === "USD" ? "$" : (s && s.currency === "HKD" ? "HK$" : "¥"); }
+ function currencySuffix(s) { return s && s.currency === "USD" ? "USD" : (s && s.currency === "HKD" ? "HKD" : ""); }
+ // 红利口径：ETF/基金按「每份」，个股按「每股」
+ function dividendLabel(s) { return isFundStock(s) ? "每份红利" : "每股红利"; }
+ // 股息率三档徽章：>=5% 高、>=4% 中、其余低
+ function yieldTier(r) { return (r != null && r >= 5) ? "tag-green" : ((r != null && r >= 4) ? "tag-yellow" : "tag-gray"); }
+ // 金额缩写：>=1 亿 → x.xx亿，>=1 万 → x.xx万，否则保留两位
+ function abbrevMoney(v) {
+ const n = Number(v) || 0;
+ const a = Math.abs(n);
+ if (a >= 1e8) return fmt(n / 1e8, 2) + "亿";
+ if (a >= 1e4) return fmt(n / 1e4, 2) + "万";
+ return fmt(n, 2);
+ }
+ // 总市值缩写：s.marketCap 单位已是「亿」，>=1 万亿 → x.x万亿，否则 x亿
+ function abbrevCap(v) {
+ const n = Number(v);
+ if (!n) return "—";
+ return n >= 1e4 ? fmt(n / 1e4, 1) + "万亿" : fmt(n, 0) + "亿";
+ }
+ // 折叠态：按 stock.id 记录，跨 renderWatch 重写 innerHTML 存活
+ let collapsedIds = new Set();
+ try { collapsedIds = new Set(JSON.parse(localStorage.getItem("mmbf_watchlist_collapsed") || "[]")); } catch(e) { collapsedIds = new Set(); }
+ function saveCollapsed() { try { localStorage.setItem("mmbf_watchlist_collapsed", JSON.stringify([...collapsedIds])); } catch(e) {} }
  function sign(n) { return n > 0 ? "+" : ""; }
  function cls(n) { return n > 0 ? "up" : (n < 0 ? "down" : ""); }
  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -1334,54 +1380,64 @@
  ? (showRealized && shares > 0 ? pnl / (basisTotal || (basisCost * shares)) : (price - basisCost) / basisCost) * 100
  : 0;
  const pnlLabel = (showRealized || dilutedBasis) ? "总盈亏" : "持仓盈亏";
- const money = n => `${n < 0 ? "-" : (n > 0 ? "+" : "")}¥${fmt(Math.abs(n))}`;
+ // 币种符号：A股 ¥、港股 HK$、美股 $
+ const cur = currencyOf(s);
+ const curSuf = currencySuffix(s);
+ const money = n => `${n < 0 ? "-" : (n > 0 ? "+" : "")}${cur}${fmt(Math.abs(n))}`;
  const pnlTip = dilutedBasis
- ? `摊薄成本已扣卖出净收，浮盈即总盈亏；持仓部分成本 ¥${fmt(basisTotal || (basisCost * shares))}`
+ ? `摊薄成本已扣卖出净收，浮盈即总盈亏；持仓部分成本 ${cur}${fmt(basisTotal || (basisCost * shares))}`
  : (showRealized ? `持仓 ${money(holdingPnl)} + 已实现 ${money(realized)}` : "");
  const mv = shares * price;
  const weight = totalMV > 0 ? mv / totalMV * 100 : 0;
  const costYield = cost > 0 ? ((Number(s.dividend)||0) / cost * 100) : 0;
  const tagHtml = s.tag ? `<span class="tag tag-blue">${escapeHtml(s.tag)}</span>` : "";
- const taxTag = s.taxFree ? `<span class="tag tag-gray">免税</span>` : "";
+ const taxTag = s.taxFree ? `<span class="tag tag-green">免税</span>` : "";
  const marketTag = s.currency === "HKD" ? `<span class="tag tag-blue">港股</span>` : (s.currency === "USD" ? `<span class="tag tag-blue">美股</span>` : "");
  const fundTag = s.fundType ? `<span class="tag tag-gray">${escapeHtml(s.fundType)}</span>` : "";
  const confirmTag = s.dividendConfirmed ? `<span class="tag tag-red">股息已确认</span>` : (Number(s.dividend) ? `<span class="tag tag-gray">预估</span>` : "");
  const chgHtml = chg != null ? `<div class="price-chg ${cls(chg)}">${sign(chg)}${fmt(chg,2)}%</div>` : "";
- return `
- <div class="stock-card" data-id="${s.id}">
- <div class="card-main">
- <div class="card-top">
- <div>
- <div class="stock-name">${escapeHtml(s.name)} <span class="code">${escapeHtml(s.code||"")}</span>${tagHtml}${marketTag}${fundTag}${confirmTag}</div>
- <div class="dividend-hint">每股红利 ¥${fmt(Number(s.dividend)||0,3)}</div>
- </div>
- <div class="stock-price">
- <div class="price-now">¥${fmt(price, isFundStock(s) ? 3 : 2)}</div>
- ${chgHtml}
- </div>
- </div>
- <div class="card-row">
- <div class="yield-left">
- <span class="tag tag-red" title="股息率 = 上一年度合计分红 ÷ 现价（TTM 口径）">${effYield != null ? fmt(effYield,2)+"%" : "—"}</span>
- ${taxTag}
- </div>
- <div class="cost-yield">成本股息率 ${fmt(costYield,2)}%</div>
- </div>
- <div class="yield-note">股息率(TTM) = 上一年度合计分红 ¥${fmt(div,3)} ÷ 现价 ¥${fmt(price,2)}</div>
- ${(() => {
+ // 成本价展示：口径（均价/摊薄）在卡片内先算好，模板里只做拼装
  const dec = costDecimals(s);
  const dilutedOn = costMode === "diluted" && canDilute;
  const showCost = dilutedOn ? basisCost : adjCost;
  const costLabel = dilutedOn ? "摊薄成本" : "成本价";
- const costText = cost > 0 ? `${costLabel} ¥${fmt(showCost, dec)}` : `${costLabel} —`;
+ // 「已回本」只在填过成本之后判断：cost<=0 是「未填写」，不是「已回本」
+ const recovered = cost > 0 && showCost <= 0;
+ const costText = cost > 0
+ ? (recovered ? `${costLabel}（已回本）` : `${costLabel} ${cur}${fmt(showCost, dec)}`)
+ : `${costLabel} —`;
  const shareText = shares > 0 ? `持仓 ${fmt(shares,0)} 股` : "未记录持仓";
  const tipParts = [];
  if (dilutedOn) tipParts.push(`摊薄成本＝（买入成本 − 卖出净收）÷ 持仓股数`);
- else if (pastDiv > 0) tipParts.push(`成本价已扣累计分红 ¥${fmt(pastDiv,3)}/股`);
- if (pastDiv > 0) tipParts.push(`原始成本 ¥${fmt(cost, dec)}，已扣分红 ¥${fmt(pastDiv,3)}`);
- const tip = tipParts.join("；");
- return `<div class="cost-note"${tip ? ` title="${tip}"` : ""}>${shareText} · ${costText}</div>`;
- })()}
+ else if (pastDiv > 0) tipParts.push(`成本价已扣累计分红 ${cur}${fmt(pastDiv,3)}/股`);
+ if (pastDiv > 0) tipParts.push(`原始成本 ${cur}${fmt(cost, dec)}，已扣分红 ${cur}${fmt(pastDiv,3)}`);
+ const costTip = tipParts.join("；");
+ const collapsed = collapsedIds.has(s.id);
+ return `
+ <div class="stock-card${collapsed ? " collapsed" : ""}" data-id="${s.id}">
+ <div class="card-main">
+ <div class="card-top">
+ <div>
+ <div class="stock-name">${escapeHtml(s.name)} <span class="code">${escapeHtml(s.code||"")}</span>${tagHtml}${marketTag}${fundTag}${confirmTag}</div>
+ <div class="dividend-hint">${dividendLabel(s)} ${cur}${fmt(Number(s.dividend)||0,3)}</div>
+ </div>
+ <div class="stock-price">
+ <div class="stock-price-main">
+ <div class="price-now">${cur}${fmt(price, isFundStock(s) ? 3 : 2)}${curSuf ? `<span class="cur-suf">${curSuf}</span>` : ""}</div>
+ ${chgHtml}
+ </div>
+ <button class="fold-btn" data-fold="${s.id}" title="${collapsed ? "展开" : "收起"}" aria-label="${collapsed ? "展开" : "收起"}">▼</button>
+ </div>
+ </div>
+ <div class="card-row">
+ <div class="yield-left">
+ <span class="tag ${yieldTier(effYield)}" title="股息率 = 上一年度合计分红 ÷ 现价（TTM 口径）">${effYield != null ? fmt(effYield,2)+"%" : "—"}</span>
+ ${taxTag}
+ </div>
+ <div class="cost-yield">成本股息率 <span class="tag ${cost > 0 ? yieldTier(costYield) : "tag-gray"}">${cost > 0 ? fmt(costYield,2)+"%" : "—"}</span></div>
+ </div>
+ <div class="yield-note">股息率(TTM) = 上一年度合计分红 ${cur}${fmt(div,3)} ÷ 现价 ${cur}${fmt(price,2)}</div>
+ <div class="cost-note"${costTip ? ` title="${costTip}"` : ""}>${shareText} · ${costText}</div>
  </div>
  <div class="card-side">
  <div class="input-row">
@@ -1395,15 +1451,15 @@
  </div>
  </div>
  <div class="summary-pink">
- <div class="sum-item"><div class="sum-label">年红利</div><div class="sum-value">¥${fmt(annualDiv)}</div></div>
- <div class="sum-item"><div class="sum-label">月均</div><div class="sum-value">¥${fmt(monthlyDiv)}</div></div>
- <div class="sum-item"><div class="sum-label"${pnlTip ? ` title="${pnlTip}"` : ""}>${pnlLabel}</div><div class="sum-value ${cls(pnl)}"${pnlTip ? ` title="${pnlTip}"` : ""}>${sign(pnl)}¥${fmt(pnl)} (${sign(pnlPct)}${fmt(pnlPct,2)}%)</div></div>
+ <div class="sum-item"><div class="sum-label">年红利</div><div class="sum-value">${cur}${fmt(annualDiv)}</div></div>
+ <div class="sum-item"><div class="sum-label">月均</div><div class="sum-value">${cur}${fmt(monthlyDiv)}</div></div>
+ <div class="sum-item"><div class="sum-label"${pnlTip ? ` title="${pnlTip}"` : ""}>${pnlLabel}</div><div class="sum-value ${cls(pnl)}"${pnlTip ? ` title="${pnlTip}"` : ""}>${recovered ? `${sign(pnl)}${cur}${fmt(pnl)} (已回本)` : `${sign(pnl)}${cur}${fmt(pnl)} (${sign(pnlPct)}${fmt(pnlPct,2)}%)`}</div></div>
  </div>
  ${showRealized && realized !== 0 ? `<div class="realized-note">已实现 ${money(realized)}（卖出 ${state.trades.filter(t => (t.code||"") === s.code && t.type === "sell").length} 笔） · 持仓部分 ${money(holdingPnl)}</div>` : ""}
  <div class="metrics-row">
- <span>持有市值 ¥${fmt(mv)}</span>
+ <span>持有市值 ${cur}${abbrevMoney(mv)}</span>
  <span>仓位占比 ${fmt(weight,1)}%</span>
- <span>总市值 ${Number(s.marketCap)?fmt(Number(s.marketCap))+'亿':'—'}</span>
+ <span>总市值 ${abbrevCap(s.marketCap)}</span>
  </div>
  </div>
  <div class="card-footer">
@@ -2033,6 +2089,7 @@
  const edit = e.target.closest("[data-edit-stock]");
  const sort = e.target.closest("[data-sort]");
  const cat = e.target.closest("[data-cat]");
+ const fold = e.target.closest("[data-fold]");
  const close = e.target.closest("[data-close]");
 
  if (st) { const s=state.stocks.find(x=>x.id===st.dataset.delStock); if(confirm(`确定移除「${s?s.name:""}」？`)){ if(!Array.isArray(state.deleted)) state.deleted=[]; state.deleted.push(st.dataset.delStock); state.stocks=state.stocks.filter(x=>x.id!==st.dataset.delStock); save({ noTouch: true }); renderAll(); toast("已移除"); } return; }
@@ -2042,6 +2099,7 @@
  if (rec) { openTradeModal(rec.dataset.rec); return; }
  if (hist) { openTradeHist(hist.dataset.trades); return; }
  if (mat) { location.href = "matrix.html?id=" + encodeURIComponent(mat.dataset.matrix); return; }
+ if (fold) { const id = fold.dataset.fold; if (collapsedIds.has(id)) collapsedIds.delete(id); else collapsedIds.add(id); saveCollapsed(); renderWatch(); return; }
  if (sort) { sortBy=sort.dataset.sort; $$("[data-sort]").forEach(b=>b.classList.toggle("active", b===sort)); renderWatch(); return; }
  if (cat) { catFilter=cat.dataset.cat; renderCatPills(); renderWatch(); return; }
  if (close) { closeMask(close.dataset.close); return; }
