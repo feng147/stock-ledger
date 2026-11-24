@@ -1246,20 +1246,49 @@
  .map(t => t.date).sort();
  return buys.length ? buys[0] : null;
  }
- // 累计「持有期间已除息」的每股红利之和（股票 + ETF 统一口径）
- // 有持仓起始日：只计 起始日之后、且已除息 的事件；未知起始日：回退近 365 天，避免把多年历史全扣掉
- function pastDividendPerShare(code) {
+ // 截至 date（含）当天，该股累计净买入股数；基线买入（1900-01-01）视为一直持有
+ function heldSharesAt(code, date) {
+ let q = 0;
+ (state.trades || []).forEach(t => {
+ if ((t.code || "") !== code || !t.date || t.date > date) return;
+ const n = Number(t.qty) || 0;
+ if (t.type === "buy") q += n; else if (t.type === "sell") q -= n;
+ });
+ return Math.max(0, q);
+ }
+ // date 之后卖出的股数（FIFO 口径：先卖的是老股，用于剔除"除息时持有、但后来已卖出"的部分）
+ function soldQtyAfter(code, date) {
+ let q = 0;
+ (state.trades || []).forEach(t => {
+ if ((t.code || "") !== code || t.type !== "sell") return;
+ if (t.date && t.date > date) q += Number(t.qty) || 0;
+ });
+ return q;
+ }
+ // 累计「真正拿到」的分红总额（元）：按每次除息日的实际持有股数计提，
+ // 且只计至今仍未卖出的部分（已卖出股份的分红不影响当前持仓成本价）。
+ // 无真实交易流水（手填/基线）时无法定位持有区间，沿用旧口径：回退近 365 天，摊到全部持仓。
+ function pastDividendTotal(code, sharesNow) {
  const now = new Date();
  const td = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
  const lo = new Date(now.getTime() - 365 * 86400000);
  const loStr = lo.getFullYear() + "-" + String(lo.getMonth() + 1).padStart(2, "0") + "-" + String(lo.getDate()).padStart(2, "0");
- const acq = acquisitionDate(code);
  const recs = exMap[code] || [];
+ const hasRealTrades = (state.trades || []).some(t => (t.code || "") === code && t.date && t.date !== "1900-01-01");
+ if (!hasRealTrades) {
+ const perShare = recs.reduce((s, r) => {
+ if (!r.exDate || r.exDate > td) return s; // 尚未除息
+ if (r.exDate < loStr) return s; // 未知起始日：只计近 365 天
+ return s + (Number(r.ps) || 0);
+ }, 0);
+ return perShare * (Number(sharesNow) || 0);
+ }
  return recs.reduce((sum, r) => {
  if (!r.exDate || r.exDate > td) return sum; // 尚未除息
- if (acq) { if (r.exDate <= acq) return sum; } // 买入前已除息，未拿到
- else if (r.exDate < loStr) return sum; // 未知起始日：只计近 365 天
- return sum + (Number(r.ps) || 0);
+ const held = heldSharesAt(code, r.exDate);
+ if (held <= 0) return sum; // 除息时未持有，未拿到
+ const stillHeld = Math.max(0, held - soldQtyAfter(code, r.exDate)); // 已卖出部分不计当前成本
+ return sum + (Number(r.ps) || 0) * stillHeld;
  }, 0);
  }
 
@@ -1299,17 +1328,19 @@
  const h = map[s.code] || { qty: 0, avgCost: 0 };
  let shares = s.shares != null && s.shares !== "" ? Number(s.shares) : h.qty;
  let cost = s.cost != null && s.cost !== "" ? Number(s.cost) : (h.avgCost || 0);
- // 除息后成本价：原价 − 累计已除息每股分红（显示/P&L 用，原 cost 不变、不污染存储与多端同步）
- const pastDiv = pastDividendPerShare(s.code);
- const adjCost = cost > 0 ? Math.max(0, cost - pastDiv) : cost;
- // 摊薄成本：(累计买入总额 − 累计卖出净收) ÷ 现持股数，再扣累计已除息分红
+ // 除息后成本价：成本基数 − 实际拿到的分红总额（按各除息日实际持有股数计提）
+ // （显示/P&L 用，原 cost 不变、不污染存储与多端同步）
+ const divTotal = pastDividendTotal(s.code, shares);
+ const pastDiv = shares > 0 ? divTotal / shares : 0; // 每股等效分红（仅提示文案用）
+ const adjCost = cost > 0 && shares > 0 ? Math.max(0, cost - divTotal / shares) : cost;
+ // 摊薄成本：(累计买入总额 − 累计卖出净收 − 实际拿到的分红总额) ÷ 现持股数
  // 手填持仓 / 期初基线没有买卖流水，无法摊薄，回退到均价口径
  const flow = tradeFlow(s.code);
  // 只有“买卖流水能对上剩余持仓”时摊薄才有意义：净投入 ≤ 0 说明已全部回本或数据不匹配，回退均价
  const netIn = flow.bought - flow.sold;
  const canDilute = flow.hasFlow && shares > 0 && netIn > 0;
  const dilutedNet = canDilute ? netIn : 0;
- const dilutedCost = canDilute ? Math.max(0, dilutedNet / shares - pastDiv) : adjCost;
+ const dilutedCost = canDilute ? Math.max(0, (dilutedNet - divTotal) / shares) : adjCost;
  // basisCost：当前选中口径下用于展示与浮盈计算的成本价
  const basisCost = (costMode === "diluted" && canDilute) ? dilutedCost : adjCost;
  // basisTotal：剩余持仓的成本基数（百分比分母）
