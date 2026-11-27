@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-26",
+  "updatedAt": "2026-11-27",
   "source": "eastmoney RPT_SHAREBONUS_DET (snapshot)",
   "stocks": {
     "300014": {
@@ -743,7 +743,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 0.4977982003
+          "divYield": 0.5019305019
         },
         {
           "ps": null,
@@ -1568,7 +1568,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2025-06-30",
-          "divYield": 0.7237569061
+          "divYield": 0.7248381564
         },
         {
           "ps": 1.41,
@@ -1598,7 +1598,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2024-09-30",
-          "divYield": 0.9116022099000001
+          "divYield": 0.9129640901
         },
         {
           "ps": 4.0600000000000005,
@@ -5308,7 +5308,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.7217741935
+          "divYield": 1.7273462783000002
         },
         {
           "ps": 0.41,
@@ -8103,7 +8103,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 3.2138442522000004
+          "divYield": 3.1901840491
         },
         {
           "ps": 1.2,
@@ -12218,7 +12218,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.7349063151
+          "divYield": 1.7170329670000002
         },
         {
           "ps": 0.49000000000000005,
@@ -13003,7 +13003,7 @@
           "exDate": null,
           "progress": "预披露",
           "reportDate": "2026-09-30",
-          "divYield": 0.5396654074
+          "divYield": 0.5574136009
         },
         {
           "ps": 0.26,
@@ -19418,7 +19418,7 @@
           "exDate": "2026-12-03",
           "progress": "实施分配",
           "reportDate": "2026-09-30",
-          "divYield": 1.8747656543
+          "divYield": 1.8382352941000002
         },
         {
           "ps": 0.21000000000000002,
@@ -19723,7 +19723,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.1446886447
+          "divYield": 1.1441647597
         },
         {
           "ps": 0.96,
@@ -21002,7 +21002,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 1.2507444907999998
+          "divYield": 1.256356566
         },
         {
           "ps": 0.9,
@@ -22087,7 +22087,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 0.7283321194
+          "divYield": 0.7067137809
         },
         {
           "ps": 0.25,
@@ -24082,7 +24082,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 1.6914920475000002
+          "divYield": 1.6341463415
         },
         {
           "ps": 0.65,
@@ -24595,9 +24595,9 @@
           "planDate": "2026-08-29",
           "recordDate": null,
           "exDate": null,
-          "progress": "董事会决议通过",
+          "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 2.08
+          "divYield": 2.0634920635
         },
         {
           "ps": 0.27799999999999997,
@@ -26382,7 +26382,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.8380743982
+          "divYield": 1.8122977346000002
         },
         {
           "ps": 0.1684,
@@ -26637,7 +26637,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.4372908053
+          "divYield": 1.4504271806
         },
         {
           "ps": 2.06,
@@ -28443,11 +28443,11 @@
           "ps": 0.133,
           "planText": "10派1.33元(含税)",
           "planDate": "2026-08-29",
-          "recordDate": "2026-12-10",
+          "recordDate": null,
           "exDate": null,
-          "progress": "董事会决议通过",
+          "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 2.2278056951
+          "divYield": 2.2129783694
         },
         {
           "ps": 0.0953,
@@ -29582,7 +29582,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 1.5438356164
+          "divYield": 1.5544827585999998
         },
         {
           "ps": null,
@@ -29771,13 +29771,13 @@
       "records": [
         {
           "ps": 0.0789,
-          "planText": "10派0.789元(含税)",
+          "planText": "10派0.789元(含税,扣税后0.7101元)",
           "planDate": "2026-10-22",
-          "recordDate": null,
-          "exDate": null,
-          "progress": "董事会决议通过",
+          "recordDate": "2026-12-02",
+          "exDate": "2026-12-03",
+          "progress": "实施分配",
           "reportDate": "2026-06-30",
-          "divYield": 1.4803001876
+          "divYield": 1.469273743
         },
         {
           "ps": 0.0954,
@@ -30552,7 +30552,7 @@
           "exDate": "2015-10-14",
           "progress": "实施分配",
           "reportDate": "2015-06-30",
-          "divYield": 1.4958863126
+          "divYield": null
         },
         {
           "ps": 0.3,
@@ -30562,7 +30562,7 @@
           "exDate": "2015-05-21",
           "progress": "实施分配",
           "reportDate": "2014-12-31",
-          "divYield": null
+          "divYield": 0.7479431563
         },
         {
           "ps": 0.5,
@@ -31477,7 +31477,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.5965051628
+          "divYield": 1.5789473684000002
         },
         {
           "ps": 0.2029,
@@ -31847,7 +31847,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.5866666666999998
+          "divYield": 1.5845539281
         },
         {
           "ps": 0.1169,
@@ -34636,7 +34636,7 @@
           "exDate": "1992-03-23",
           "progress": "实施分配",
           "reportDate": "1991-12-31",
-          "divYield": 1.6129032258000002
+          "divYield": 1.6064257028
         },
         {
           "ps": 0.3,
@@ -35181,7 +35181,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 0.7843137255
+          "divYield": 0.7901234568
         },
         {
           "ps": 0.013033300000000001,
@@ -36276,7 +36276,7 @@
           "exDate": "2026-11-30",
           "progress": "实施分配",
           "reportDate": "2026-06-30",
-          "divYield": 0.5311238581
+          "divYield": 0.5290445456
         },
         {
           "ps": 3.8,
@@ -36431,7 +36431,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 2.4521824424
+          "divYield": 2.457002457
         },
         {
           "ps": 2,
@@ -38399,9 +38399,9 @@
           "planDate": "2026-10-30",
           "recordDate": null,
           "exDate": null,
-          "progress": "董事会决议通过",
+          "progress": "股东大会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 0.9483167378
+          "divYield": 0.9621860868
         },
         {
           "ps": 3.4,
@@ -40846,7 +40846,7 @@
           "exDate": null,
           "progress": "实施分配",
           "reportDate": "2003-12-31",
-          "divYield": 2.4183796856
+          "divYield": 2.4154589372
         },
         {
           "ps": 0.3,
@@ -40856,7 +40856,7 @@
           "exDate": null,
           "progress": "实施分配",
           "reportDate": "2002-12-31",
-          "divYield": 1.2091898428
+          "divYield": 1.2077294686
         },
         {
           "ps": 0.12,
@@ -40866,7 +40866,7 @@
           "exDate": null,
           "progress": "实施分配",
           "reportDate": "2000-12-31",
-          "divYield": 0.4836759371
+          "divYield": 0.4830917874
         }
       ]
     },
@@ -41281,7 +41281,7 @@
           "exDate": "2026-11-27",
           "progress": "实施分配",
           "reportDate": "2026-06-30",
-          "divYield": 2.7929788332000003
+          "divYield": 2.7517802645
         },
         {
           "ps": 0.512,
@@ -43386,7 +43386,7 @@
           "exDate": null,
           "progress": "股东大会否决",
           "reportDate": "2017-12-31",
-          "divYield": 1.2976799056000001
+          "divYield": 1.2860483242
         },
         {
           "ps": 0.25,
@@ -43786,7 +43786,7 @@
           "exDate": null,
           "progress": "董事会决议通过",
           "reportDate": "2026-09-30",
-          "divYield": 0.1291155584
+          "divYield": 0.1293103448
         },
         {
           "ps": 0.10992310000000001,
@@ -46771,7 +46771,7 @@
           "exDate": "2026-11-27",
           "progress": "实施分配",
           "reportDate": "2026-09-30",
-          "divYield": 2.0675396278
+          "divYield": 2.0891364903
         },
         {
           "ps": 0.1,
@@ -49341,7 +49341,7 @@
           "exDate": null,
           "progress": "股东大会决议通过",
           "reportDate": "2026-06-30",
-          "divYield": 1.1574074074
+          "divYield": 1.1682242991
         },
         {
           "ps": 0.075,
